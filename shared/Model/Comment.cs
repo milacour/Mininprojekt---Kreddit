@@ -7,6 +7,12 @@ public class Comment
     public int Upvotes { get; set; }
     public int Downvotes { get; set; }
     public User User { get; set; }
+
+    // Tilføjet PostId som en fremmednøgle til Post
+    public int PostId { get; set; }
+    // Tilføjet navigationsejendom til Post
+   // public Post Post { get; set; }
+
     public Comment(string content = "", int upvotes = 0, int downvotes = 0, User user = null)
     {
         Content = content;
@@ -14,7 +20,9 @@ public class Comment
         Downvotes = downvotes;
         User = user;
     }
-    public Comment() {
+
+    public Comment()
+    {
         Id = 0;
         Content = "";
         Upvotes = 0;

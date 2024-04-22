@@ -4,9 +4,6 @@
 @using shared.Model;
 @inject ApiService apiService
 
-@using Microsoft.Extensions.Configuration
-@inject IConfiguration Configuration
-
 @if (posts == null)
 {
     <p><em>Loading...</em></p>
@@ -22,10 +19,6 @@ else
         @foreach (var post in posts)
         {
             <tr>
-                <!-- 
-                    These a href links will match the route in the page 'PostItem.razor'.
-                    The route is defined as "/post/{id}" and the id is the post id.
-                -->
                 <td><a href="/post/@post.Id">@post.Title</a></td>
                 <td>@post.Content</td>
                 <td>@(post.Upvotes - post.Downvotes)</td>
@@ -34,26 +27,60 @@ else
             </tr>
         }
     </table>
-
-    <br/>
 }
 
 @code {
     private Post[]? posts;
-    private Post? votePost;
 
     protected override async Task OnInitializedAsync()
     {
-        posts = await apiService.GetPosts();
+        try
+        {
+            posts = await apiService.GetPosts();
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Fejl under indlæsning af posts: {ex.Message}");
+            // Her kan du tilføje UI logik for at vise en fejlbesked
+        }
     }
 
     private async void Upvote(int id)
     {
-        var updatedPost = await apiService.UpvotePost(id);
+        try
+        {
+            var updatedPost = await apiService.UpvotePost(id);
+            UpdatePostInList(updatedPost);
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Fejl under upvoting post: {ex.Message}");
+            // Her kan du tilføje UI logik for at vise en fejlbesked
+        }
     }
 
     private async void Downvote(int id)
     {
-        Console.WriteLine("Not implemented 😪");
+        try
+        {
+            var updatedPost = await apiService.DownvotePost(id);
+            UpdatePostInList(updatedPost);
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Fejl under downvoting post: {ex.Message}");
+            // Her kan du tilføje UI logik for at vise en fejlbesked
+        }
+    }
+
+    private void UpdatePostInList(Post updatedPost)
+    {
+        var post = posts?.FirstOrDefault(p => p.Id == updatedPost.Id);
+        if (post != null)
+        {
+            post.Upvotes = updatedPost.Upvotes;
+            post.Downvotes = updatedPost.Downvotes;
+            StateHasChanged();
+        }
     }
 }

@@ -1,22 +1,19 @@
+using shared.Model;
 using System.Net.Http.Json;
 using System.Text.Json;
-using Microsoft.Extensions.Configuration;
-
-using shared.Model;
 
 namespace kreddit_app.Data;
 
 public class ApiService
 {
     private readonly HttpClient http;
-    private readonly IConfiguration configuration;
-    private readonly string baseAPI = "";
+    private readonly string baseAPI;
 
     public ApiService(HttpClient http, IConfiguration configuration)
     {
         this.http = http;
-        this.configuration = configuration;
-        this.baseAPI = configuration["base_api"];
+        // Her justeres navnet for at matche nøglen i din konfigurationsfil
+        this.baseAPI = configuration["ApiSettings:BaseApiUrl"];
     }
 
     public async Task<Post[]> GetPosts()
@@ -34,19 +31,17 @@ public class ApiService
     public async Task<Comment> CreateComment(string content, int postId, int userId)
     {
         string url = $"{baseAPI}posts/{postId}/comments";
-     
-        // Post JSON to API, save the HttpResponseMessage
+
         HttpResponseMessage msg = await http.PostAsJsonAsync(url, new { content, userId });
 
-        // Get the JSON string from the response
-        string json = msg.Content.ReadAsStringAsync().Result;
+        // Anvend 'await' i stedet for '.Result' for at undgå potentielle deadlocks
+        string json = await msg.Content.ReadAsStringAsync();
 
-        // Deserialize the JSON string to a Comment object
-        Comment? newComment = JsonSerializer.Deserialize<Comment>(json, new JsonSerializerOptions {
-            PropertyNameCaseInsensitive = true // Ignore case when matching JSON properties to C# properties 
+        Comment? newComment = JsonSerializer.Deserialize<Comment>(json, new JsonSerializerOptions
+        {
+            PropertyNameCaseInsensitive = true
         });
 
-        // Return the new comment 
         return newComment;
     }
 
@@ -54,18 +49,36 @@ public class ApiService
     {
         string url = $"{baseAPI}posts/{id}/upvote/";
 
-        // Post JSON to API, save the HttpResponseMessage
         HttpResponseMessage msg = await http.PutAsJsonAsync(url, "");
 
-        // Get the JSON string from the response
-        string json = msg.Content.ReadAsStringAsync().Result;
+        // Anvend 'await' i stedet for '.Result' for at undgå potentielle deadlocks
+        string json = await msg.Content.ReadAsStringAsync();
 
-        // Deserialize the JSON string to a Post object
-        Post? updatedPost = JsonSerializer.Deserialize<Post>(json, new JsonSerializerOptions {
-            PropertyNameCaseInsensitive = true // Ignore case when matching JSON properties to C# properties
+        Post? updatedPost = JsonSerializer.Deserialize<Post>(json, new JsonSerializerOptions
+        {
+            PropertyNameCaseInsensitive = true
         });
 
-        // Return the updated post (vote increased)
         return updatedPost;
     }
+
+    public async Task<Post> DownvotePost(int id)
+    {
+        string url = $"{baseAPI}posts/{id}/downvote/";
+
+        HttpResponseMessage msg = await http.PutAsJsonAsync(url, "");
+
+        // Anvend 'await' til at læse responsindholdet asynkront.
+        string json = await msg.Content.ReadAsStringAsync();
+
+        // Deserialiser JSON-strengen til en Post-instans. Sikr, at ejendomsnavne behandles uden forskel på store og små bogstaver.
+        Post? updatedPost = JsonSerializer.Deserialize<Post>(json, new JsonSerializerOptions
+        {
+            PropertyNameCaseInsensitive = true
+        });
+
+        // Returner den opdaterede post.
+        return updatedPost;
+    }
+
 }
